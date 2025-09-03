@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { BsCashCoin } from "react-icons/bs";
 import { GrInProgress } from "react-icons/gr";
-import { MdTrendingUp, MdRestaurant, MdTableBar, MdPayment, MdPerson } from "react-icons/md";
+import { MdTrendingUp, MdRestaurant, MdTableBar, MdPayment, MdPerson, MdPrint } from "react-icons/md";
 import { FaReceipt, FaClock } from "react-icons/fa";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getOrders, updateOrder } from "../../https/index";
 import OrderDetailsModal from "../modals/OrderDetailsModal";
+import Invoice from "../invoice/Invoice";
 import toast, { Toaster } from "react-hot-toast";
 
 const StatCard = ({ title, value, change, icon: Icon, color = "orange", isLoading = false }) => {
@@ -83,7 +84,7 @@ const QuickActionCard = ({ title, description, icon: Icon, onClick, color = "ora
     );
 };
 
-const OrderCard = ({ order, index, onViewDetails, onProcessPayment }) => {
+const OrderCard = ({ order, index, onViewDetails, onProcessPayment, onPrintReceipt }) => {
     // Get the correct total amount from bills
     const totalAmount = order.bills?.totalWithDiscount || order.bills?.total || 0;
     // Get table number
@@ -183,7 +184,7 @@ const OrderCard = ({ order, index, onViewDetails, onProcessPayment }) => {
                         <FaReceipt size={14} className="mr-2" />
                         View Details
                     </Button>
-                    {!order.isPaid && (
+                    {!order.isPaid ? (
                         <Button
                             variant="primary"
                             size="sm"
@@ -192,6 +193,16 @@ const OrderCard = ({ order, index, onViewDetails, onProcessPayment }) => {
                         >
                             <MdPayment size={16} className="mr-2" />
                             Process Payment
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all"
+                            onClick={() => onPrintReceipt(order)}
+                        >
+                            <MdPrint size={16} className="mr-2" />
+                            Print Receipt
                         </Button>
                     )}
                 </div>
@@ -208,6 +219,8 @@ const CashierHome = ({ userData }) => {
     const queryClient = useQueryClient();
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showInvoice, setShowInvoice] = useState(false);
+    const [invoiceOrder, setInvoiceOrder] = useState(null);
 
     const { data: ordersData, isLoading: ordersLoading } = useQuery({
         queryKey: ["orders"],
@@ -250,6 +263,20 @@ const CashierHome = ({ userData }) => {
             isPaid: true,
             paymentMethod: "Cash" // You can make this dynamic based on user selection
         });
+    };
+    
+    // Handle print receipt
+    const handlePrintReceipt = (order) => {
+        if (!order.isPaid) {
+            toast.error("Cannot print receipt for unpaid order", {
+                duration: 3000,
+                position: 'top-center',
+            });
+            return;
+        }
+        
+        setInvoiceOrder(order);
+        setShowInvoice(true);
     };
 
     const orders = ordersData?.data?.data || [];
@@ -441,6 +468,7 @@ const CashierHome = ({ userData }) => {
                                     index={index}
                                     onViewDetails={handleViewDetails}
                                     onProcessPayment={handleProcessPayment}
+                                    onPrintReceipt={handlePrintReceipt}
                                 />
                             ))}
                         </div>
@@ -467,6 +495,11 @@ const CashierHome = ({ userData }) => {
                 onProcessPayment={handleProcessPayment}
             />
 
+            {/* Invoice Modal */}
+            {showInvoice && invoiceOrder && (
+                <Invoice orderInfo={invoiceOrder} setShowInvoice={setShowInvoice} />
+            )}
+            
             {/* Toast Notifications */}
             <Toaster />
         </div>

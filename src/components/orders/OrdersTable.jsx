@@ -33,10 +33,15 @@ const OrdersTable = ({ orders = [], loading = false, onViewDetails, handleStatus
     }
   };
 
+  // Sort orders in descending order by date (newest first)
+  const sortedOrders = [...orders].sort((a, b) => {
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
   // Pagination Logic
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
-  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const currentOrders = sortedOrders.slice(indexOfFirstOrder, indexOfLastOrder);
 
   const totalPages = Math.ceil(orders.length / ordersPerPage);
 

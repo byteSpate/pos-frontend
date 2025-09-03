@@ -337,24 +337,6 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
                 <span className="text-orange-600">Payment pending - Print will be available after payment</span>
               )}
             </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowInvoice(false)}
-              >
-                Close
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handlePrint}
-                disabled={!orderInfo.isPaid}
-                icon={<MdPrint />}
-              >
-                Print Receipt
-              </Button>
-            </div>
           </div>
         </div>
       </Card>

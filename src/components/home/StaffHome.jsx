@@ -5,8 +5,9 @@ import { FaClock, FaUtensils } from "react-icons/fa";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getOrders } from "../../https/index";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getOrders, updateOrderStatus, deleteOrder } from "../../https/index";
+import { enqueueSnackbar } from "notistack";
 
 const StatCard = ({ title, value, change, icon: Icon, color = "orange", isLoading = false }) => {
     const colorClasses = {
@@ -80,7 +81,12 @@ const QuickActionCard = ({ title, description, icon: Icon, onClick, color = "ora
     );
 };
 
-const OrderStatusCard = ({ order, index, onStatusUpdate }) => {
+const OrderStatusCard = ({ order, index, onStatusUpdate, onDeleteOrder }) => {
+    const getDisplayStatus = (status) => {
+        if (status === 'In Progress') return 'Preparing';
+        return status;
+    };
+
     const getStatusColor = (status) => {
         switch (status) {
             case 'Pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
@@ -124,7 +130,7 @@ const OrderStatusCard = ({ order, index, onStatusUpdate }) => {
                     </div>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.orderStatus)}`}>
-                    {order.orderStatus === 'In Progress' ? 'Currently Preparing' : (order.orderStatus || 'Pending')}
+                    {getDisplayStatus(order.orderStatus) || 'Pending'}
                 </span>
             </div>
 
@@ -148,22 +154,34 @@ const OrderStatusCard = ({ order, index, onStatusUpdate }) => {
                 </div>
             )}
 
-            {nextStatus && order.orderStatus !== 'Completed' && (
+            <div className="flex flex-col gap-2">
+                {nextStatus && order.orderStatus !== 'Completed' && (
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => onStatusUpdate(order._id, nextStatus)}
+                    >
+                        Mark as {nextStatus}
+                    </Button>
+                )}
                 <Button
-                    variant="primary"
+                    variant="destructive"
                     size="sm"
-                    className="w-full"
-                    onClick={() => onStatusUpdate(order._id, nextStatus)}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white disabled:bg-gray-300 disabled:text-gray-500"
+                    onClick={() => onDeleteOrder(order._id)}
+                    disabled={order.orderStatus !== 'In Progress'}
                 >
-                    Mark as {nextStatus}
+                    Cancel Order
                 </Button>
-            )}
+            </div>
         </Card>
     );
 };
 
 const StaffHome = ({ userData }) => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const { data: ordersData, isLoading: ordersLoading } = useQuery({
         queryKey: ["orders"],
@@ -183,16 +201,21 @@ const StaffHome = ({ userData }) => {
         return new Date(order.createdAt).toDateString() === today;
     });
 
-    const preparingOrders = orders.filter(order =>
-        order.orderStatus === 'Preparing' || order.orderStatus === 'In Progress'
-    ).length;
+    // Get all In Progress orders
+    const inProgressOrders = orders.filter(order => order.orderStatus === 'In Progress');
+    
+    // Only the first In Progress order goes to Currently Preparing
+    const preparingOrders = inProgressOrders.length > 0 ? 1 : 0;
+    
+
     const readyOrders = orders.filter(order => order.orderStatus === 'Ready').length;
     const completedToday = todayOrders.filter(order => order.orderStatus === 'Completed').length;
 
     const stats = [
         {
-            title: "Orders to Prepare",
-            value: orders.filter(order => order.orderStatus === 'Pending').length.toString(),
+            title: "New Orders",
+            value: (orders.filter(order => !order.orderStatus || order.orderStatus === 'Pending').length + 
+                   (inProgressOrders.length > 1 ? inProgressOrders.length - 1 : 0)).toString(),
             change: 5.2,
             icon: FaClock,
             color: "orange",
@@ -241,10 +264,30 @@ const StaffHome = ({ userData }) => {
         },
     ];
 
-    const handleStatusUpdate = (orderId, newStatus) => {
-        // This would typically update the order status via API
-        console.log(`Updating order ${orderId} to ${newStatus}`);
-        // You would implement the actual API call here
+    const handleStatusUpdate = async (orderId, newStatus) => {
+        try {
+            await updateOrderStatus({ orderId, orderStatus: newStatus });
+            // Trigger a refetch of orders data
+            queryClient.invalidateQueries(['orders']);
+            enqueueSnackbar(`Order status updated to ${newStatus}`, { variant: 'success' });
+        } catch (error) {
+            console.error('Failed to update order status:', error);
+            enqueueSnackbar('Failed to update order status', { variant: 'error' });
+        }
+    };
+    
+    const handleDeleteOrder = async (orderId) => {
+        try {
+            if (window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+                await deleteOrder(orderId);
+                // Trigger a refetch of orders data
+                queryClient.invalidateQueries(['orders']);
+                enqueueSnackbar('Order deleted successfully', { variant: 'success' });
+            }
+        } catch (error) {
+            console.error('Failed to delete order:', error);
+            enqueueSnackbar('Failed to delete order', { variant: 'error' });
+        }
     };
 
     const getGreeting = () => {
@@ -352,6 +395,7 @@ const StaffHome = ({ userData }) => {
                                     order={order}
                                     index={index}
                                     onStatusUpdate={handleStatusUpdate}
+                                    onDeleteOrder={handleDeleteOrder}
                                 />
                             ))}
                         </div>

@@ -85,19 +85,19 @@ const Bill = () => {
         tableUpdateMutation.mutate(tableData);
       }, 1500);
 
-      enqueueSnackbar("Order Placed! Awaiting Payment!", {
+      enqueueSnackbar("Order Placed! Redirecting to home page...", {
         variant: "success",
       });
       dispatch(addNotification({
-        message: `Order #${data._id.substring(0, 8)} placed and awaiting payment!`, type: "info"
+        message: `Order #${data._id.substring(0, 8)} placed successfully!`, type: "success"
       }));
 
-      // Moved setShowInvoice, removeAllItems, and removeCustomer to handleProcessPayment's onSuccess
-      // setTimeout(() => {
-      //   setShowInvoice(true);
-      //   dispatch(removeAllItems());
-      //   dispatch(removeCustomer());
-      // }, 1500);
+      // Reset cart and customer data, then redirect to home page
+      setTimeout(() => {
+        dispatch(removeAllItems());
+        dispatch(removeCustomer());
+        window.location.href = "/";
+      }, 1500);
     },
     onError: (error) => {
       console.error("Error placing order:", error.response);
