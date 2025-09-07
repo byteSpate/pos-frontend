@@ -36,9 +36,11 @@ const Menu = () => {
                 <h2 className="text-sm text-gray-800 font-semibold">
                   {customerData.customerName || "Customer"}
                 </h2>
-                <p className="text-xs text-gray-500">
-                  Table: {customerData.table?.tableNo || "N/A"}
-                </p>
+                {customerData.orderType === 'Dine In' && (
+                  <p className="text-xs text-gray-500">
+                    Table: {customerData.table?.tableNo || "N/A"}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -83,9 +85,11 @@ const Menu = () => {
                     <h2 className="text-lg text-gray-800 font-semibold">
                       {customerData.customerName || "Customer Name"}
                     </h2>
-                    <p className="text-sm text-gray-500 font-medium">
-                      Table: {customerData.table?.tableNo || "N/A"}
-                    </p>
+                    {customerData.orderType === 'Dine In' && (
+                      <p className="text-sm text-gray-500 font-medium">
+                        Table: {customerData.table?.tableNo || "N/A"}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

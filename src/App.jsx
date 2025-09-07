@@ -11,10 +11,10 @@ import ExpenseManagement from "./pages/ExpenseManagement";
 import AddExpense from "./pages/AddExpense";
 import EditExpense from "./pages/EditExpense";
 import Header from "./components/shared/Header";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector} from "react-redux";
 import useLoadData from "./hooks/useLoadData";
 import FullScreenLoader from "./components/shared/FullScreenLoader"
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import NotificationProvider from "./components/shared/NotificationProvider";
 
 function Layout() {

@@ -8,17 +8,29 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
   const invoiceRef = useRef(null);
   
   const handlePrint = () => {
-    const printContent = invoiceRef.current.innerHTML;
-    const WinPrint = window.open("", "", "width=900,height=650");
-
-    WinPrint.document.write(`
-      <!DOCTYPE html>
-      <html>
+    const printContent = invoiceRef.current;
+    if (printContent) {
+      // Create a hidden iframe for printing
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.top = '-10000px';
+      iframe.style.left = '-10000px';
+      iframe.style.width = '0px';
+      iframe.style.height = '0px';
+      iframe.style.border = 'none';
+      
+      document.body.appendChild(iframe);
+      
+      // Get the invoice HTML content
+      const invoiceHTML = printContent.innerHTML;
+      
+      // Create the complete HTML document for printing
+      const printDocument = `
+        <!DOCTYPE html>
+        <html>
         <head>
-          <title>Order Receipt - ${orderInfo.customerDetails.name}</title>
-          <meta charset="UTF-8">
+          <title>Invoice - Order Receipt</title>
           <style>
-            /* Print-optimized styles */
             * {
               margin: 0;
               padding: 0;
@@ -26,258 +38,128 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
             }
             
             body {
-              font-family: 'Arial', 'Helvetica', sans-serif;
-              font-size: 10px; /* Reduced font size */
+              font-family: 'Arial', sans-serif;
+              font-size: 12pt;
               line-height: 1.4;
               color: #000;
               background: #fff;
-              padding: 10px; /* Reduced padding */
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
+              padding: 20px;
             }
             
             .printable-invoice {
-              max-width: 100%; /* Ensure it takes full width of print area */
-              margin: 0 auto; /* Center content */
-              background: #fff;
-              color: #000;
-            }
-            
-            /* Header Styles */
-            .invoice-header {
-              text-align: center;
-              margin-bottom: 20px; /* Reduced margin */
-              border-bottom: 1px solid #000; /* Thinner border */
-              padding-bottom: 15px; /* Reduced padding */
-            }
-            
-            .restaurant-name {
-              font-size: 24px; /* Adjusted font size */
-              font-weight: bold;
-              color: #000;
-              margin-bottom: 3px;
-              letter-spacing: 0.5px;
-            }
-            
-            .restaurant-subtitle {
-              font-size: 14px; /* Adjusted font size */
+              background: white;
               color: #333;
-              margin-bottom: 8px;
-              font-weight: 600;
+              font-family: Arial, sans-serif;
+              padding: 0;
             }
             
-            .restaurant-address,
-            .restaurant-contact {
-              font-size: 10px; /* Adjusted font size */
-              color: #555;
-              margin-bottom: 2px;
-            }
+            .text-center { text-align: center; }
+            .text-left { text-align: left; }
+            .text-right { text-align: right; }
             
-            /* Invoice Title */
-            .invoice-title {
-              text-align: center;
-              margin-bottom: 20px; /* Reduced margin */
-            }
+            .border-b-2 { border-bottom: 2px solid #333; }
+            .border-t { border-top: 1px solid #333; }
+            .border-t-2 { border-top: 2px solid #333; }
+            .border-gray-300 { border-color: #ccc; }
             
-            .invoice-title h2 {
-              font-size: 20px; /* Adjusted font size */
-              font-weight: bold;
-              color: #000;
-              margin-bottom: 5px;
-              letter-spacing: 1px;
-            }
+            .pb-4 { padding-bottom: 16px; }
+            .pt-4 { padding-top: 16px; }
+            .pt-6 { padding-top: 24px; }
+            .mt-2 { margin-top: 8px; }
+            .mt-6 { margin-top: 24px; }
+            .mb-1 { margin-bottom: 4px; }
+            .mb-2 { margin-bottom: 8px; }
+            .mb-6 { margin-bottom: 24px; }
+            .my-6 { margin-top: 24px; margin-bottom: 24px; }
             
-            .thank-you {
-              font-size: 12px; /* Adjusted font size */
-              color: #666;
-              font-style: italic;
-            }
+            .font-bold { font-weight: bold; }
+            .font-semibold { font-weight: 600; }
             
-            /* Information Sections */
-            .order-info,
-            .customer-info,
-            .payment-info {
-              margin-bottom: 20px; /* Reduced margin */
-              border: 1px solid #ddd;
-              padding: 10px; /* Reduced padding */
-              background: #f9f9f9;
-              page-break-inside: avoid; /* Avoid breaking these sections */
-            }
+            .text-3xl { font-size: 24pt; }
+            .text-2xl { font-size: 18pt; }
+            .text-lg { font-size: 14pt; }
+            .text-md { font-size: 12pt; }
+            .text-sm { font-size: 10pt; }
+            .text-xs { font-size: 9pt; }
             
-            .order-info h3,
-            .customer-info h3,
-            .payment-info h3 {
-              font-size: 14px; /* Adjusted font size */
-              font-weight: bold;
-              color: #000;
-              margin-bottom: 8px;
-              border-bottom: 1px solid #ccc;
-              padding-bottom: 3px;
-            }
+            .grid { display: grid; }
+            .grid-cols-2 { grid-template-columns: 1fr 1fr; }
+            .gap-4 { gap: 16px; }
             
-            .info-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 5px; /* Reduced margin */
-              font-size: 11px; /* Adjusted font size */
-            }
+            .flex { display: flex; }
+            .justify-between { justify-content: space-between; }
             
-            .info-row .label {
-              font-weight: 600;
-              color: #333;
-              min-width: 100px; /* Adjusted min-width */
-            }
+            .mx-auto { margin-left: auto; margin-right: auto; }
+            .max-w-12 { max-width: 48px; }
+            .h-12 { height: 48px; }
             
-            .info-row .value {
-              color: #000;
-              font-weight: 500;
-            }
+            .text-gray-600 { color: #666; }
+            .text-gray-500 { color: #888; }
+            .text-red-600 { color: #dc2626; }
+            .text-green-600 { color: #16a34a; }
             
-            .info-row .value.paid {
-              color: #22c55e;
-              font-weight: bold;
-            }
+            .tracking-wider { letter-spacing: 0.05em; }
             
-            /* Items Table */
-            .items-section {
-              margin-bottom: 20px; /* Reduced margin */
-              page-break-inside: avoid; /* Avoid breaking this section */
-            }
-            
-            .items-section h3 {
-              font-size: 14px; /* Adjusted font size */
-              font-weight: bold;
-              color: #000;
-              margin-bottom: 8px;
-              border-bottom: 1px solid #000;
-              padding-bottom: 3px;
-            }
-            
-            .items-table {
+            table {
               width: 100%;
               border-collapse: collapse;
-              margin-bottom: 10px; /* Reduced margin */
-              font-size: 11px; /* Adjusted font size */
+              margin: 16px 0;
             }
             
-            .items-table th {
-              background: #f0f0f0;
-              border: 1px solid #000;
-              padding: 8px 6px; /* Reduced padding */
+            th, td {
+              border: 1px solid #333;
+              padding: 8px;
               text-align: left;
-              font-weight: bold;
-              color: #000;
             }
             
-            .items-table td {
-              border: 1px solid #ccc;
-              padding: 6px; /* Reduced padding */
-              color: #000;
-            }
-            
-            .items-table .item-name {
-              font-weight: 500;
-            }
-            
-            .items-table .item-qty,
-            .items-table .item-price,
-            .items-table .item-total {
-              text-align: right;
-              font-weight: 500;
-            }
-            
-            /* Bill Summary */
-            .bill-summary {
-              margin-bottom: 20px; /* Reduced margin */
-              border: 1px solid #000; /* Thinner border */
-              padding: 10px; /* Reduced padding */
-              background: #f9f9f9;
-              page-break-inside: avoid; /* Avoid breaking this section */
-            }
-            
-            .summary-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 5px; /* Reduced margin */
-              font-size: 12px; /* Adjusted font size */
-            }
-            
-            .summary-row.discount {
-              color: #dc2626;
-            }
-            
-            .summary-row.total {
-              border-top: 1px solid #000; /* Thinner border */
-              padding-top: 8px; /* Reduced padding */
-              margin-top: 8px; /* Reduced margin */
-              font-size: 16px; /* Adjusted font size */
+            th {
+              background-color: #f0f0f0;
               font-weight: bold;
             }
             
-            .summary-row .label {
-              font-weight: 600;
-            }
+            .border-b { border-bottom: 1px solid #ccc; }
+            .border-b-2 { border-bottom: 2px solid #333; }
+            .py-2 { padding-top: 8px; padding-bottom: 8px; }
             
-            .summary-row .value {
-              font-weight: bold;
-              min-width: 100px;
-              text-align: right;
-            }
-            
-            /* Footer */
-            .invoice-footer {
-              text-align: center;
-              margin-top: 20px; /* Reduced margin */
-              border-top: 1px solid #ccc; /* Thinner border */
-              padding-top: 15px; /* Reduced padding */
-              page-break-before: auto; /* Allow page break before footer if needed */
-            }
-            
-            .footer-text {
-              font-size: 12px; /* Adjusted font size */
-              color: #333;
-              margin-bottom: 5px;
-              font-weight: 500;
-            }
-            
-            .footer-contact {
-              margin-top: 10px;
-              font-size: 10px;
-              color: #666;
-            }
-            
-            /* Print-specific overrides */
             @media print {
-              body {
-                margin: 0; /* No default body margin */
-                padding: 0; /* No default body padding */
-              }
-              .printable-invoice {
-                box-shadow: none !important; /* Remove shadows in print */
-                border: none !important; /* Remove borders in print */
-                width: 100% !important;
-              }
-              /* Ensure all colors print */
-              * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+              body { margin: 0; padding: 10px; }
+              @page { 
+                margin: 0.5in;
+                size: A4;
               }
             }
           </style>
         </head>
-        <body>
-          ${printContent}
+        <body onload="window.print(); window.parent.postMessage('print-complete', '*');">
+          ${invoiceHTML}
         </body>
-      </html>
-    `);
-
-    WinPrint.document.close();
-    WinPrint.focus();
-    
-    setTimeout(() => {
-      WinPrint.print();
-      WinPrint.close();
-    }, 1000);
+        </html>
+      `;
+      
+      // Write content to iframe and print
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(printDocument);
+      iframeDoc.close();
+      
+      // Listen for print completion
+      const handleMessage = (event) => {
+        if (event.data === 'print-complete') {
+          document.body.removeChild(iframe);
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
+      // Fallback cleanup after 5 seconds
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+          window.removeEventListener('message', handleMessage);
+        }
+      }, 5000);
+    }
   };
 
   return (

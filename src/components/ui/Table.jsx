@@ -120,7 +120,7 @@ const Table = ({
               key={column.key}
               className={`flex-1 ${paddingClasses[size]} font-medium text-slate-700 ${
                 column.sorter ? 'cursor-pointer hover:bg-slate-100 transition-colors' : ''
-              }`}
+              } ${column.className || ''}`}
               style={{ width: column.width }}
               onClick={() => column.sorter && handleSort(column.key)}
             >
@@ -147,7 +147,7 @@ const Table = ({
               {columns.map((column) => (
                 <div
                   key={column.key}
-                  className={`flex-1 ${paddingClasses[size]} ${sizeClasses[size]} text-slate-900`}
+                  className={`flex-1 ${paddingClasses[size]} ${sizeClasses[size]} text-slate-900 ${column.className || ''}`}
                   style={{ width: column.width }}
                 >
                   {renderCell(record, column, index)}

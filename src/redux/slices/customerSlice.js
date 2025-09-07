@@ -5,7 +5,8 @@ const initialState = {
     customerName: "",
     customerPhone: "",
     guests: 0,
-    table: null
+    table: null,
+    orderType: "Dine In"
 }
 
 
@@ -30,11 +31,15 @@ const customerSlice = createSlice({
 
         updateTable: (state, action) => {
             state.table = action.payload.table;
+        },
+
+        setOrderType: (state, action) => {
+            state.orderType = action.payload;
         }
 
     }
 })
 
 
-export const { setCustomer, removeCustomer, updateTable } = customerSlice.actions;
+export const { setCustomer, removeCustomer, updateTable, setOrderType } = customerSlice.actions;
 export default customerSlice.reducer;

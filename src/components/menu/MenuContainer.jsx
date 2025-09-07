@@ -1,20 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { GrRadialSelected } from "react-icons/gr";
 import { FaShoppingCart } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { addItems } from "../../redux/slices/cartSlice";
 import { setCustomer } from "../../redux/slices/customerSlice";
 import CustomerInfo from "./CustomerInfo";
-import Bill from './Bill'
+import Bill from './Bill.jsx'
 import { enqueueSnackbar } from "notistack";
 import { useGetMenuItemsQuery, useGetMenuCategoriesQuery } from "../../redux/api/menuApi";
 import { toast } from "react-toastify";
+import { useLocation } from "react-router-dom";
 
 const MenuContainer = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [itemCount, setItemCount] = useState(0);
   const [itemId, setItemId] = useState();
+  const [searchTerm, setSearchTerm] = useState('');
   const dispatch = useDispatch();
+  const location = useLocation();
 
   const customerData = useSelector((state) => state.customer);
 
@@ -56,8 +59,27 @@ const MenuContainer = () => {
     }
   }, [categoriesData, selectedCategory]);
 
-  // Filter items by selected category
-  const filteredItems = menuData.data?.filter(item => item.category === selectedCategory) || [];
+  // Extract search term from URL when component mounts or URL changes
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchTerm(decodeURIComponent(searchParam));
+    } else if (location.search === '') {
+      // Clear search term when URL has no search parameters
+      setSearchTerm('');
+    }
+  }, [location.search]);
+
+  // Filter items by selected category and search term
+  const filteredItems = menuData.data?.filter(item => {
+    const matchesCategory = !selectedCategory || item.category === selectedCategory;
+    const matchesSearch = !searchTerm || 
+      item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      item.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  }) || [];
+  
   const isLoading = categoriesLoading || menuLoading;
 
   const increment = (id) => {

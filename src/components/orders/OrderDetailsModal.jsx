@@ -84,10 +84,11 @@ const OrderDetailsModal = ({ orderInfo, onClose }) => {
       {/* Customer Details */}
       <div className="mb-4">
         <h4 className="font-semibold text-md mb-2">Customer Information:</h4>
+        <p><strong>Order Type:</strong> {currentOrder.orderType}</p>
         <p><strong>Name:</strong> {currentOrder.customerDetails.name}</p>
         <p><strong>Phone:</strong> {currentOrder.customerDetails.phone}</p>
         <p><strong>Guests:</strong> {currentOrder.customerDetails.guests}</p>
-        <p><strong>Table:</strong> {currentOrder.table.tableNo}</p>
+        {currentOrder.table && <p><strong>Table:</strong> {currentOrder.table.tableNo}</p>}
       </div>
 
       {/* Order Summary */}
@@ -137,7 +138,7 @@ const OrderDetailsModal = ({ orderInfo, onClose }) => {
         {canPrintReceipt && (
             <button
             onClick={() => setShowInvoice(true)}
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 w-full rounded-lg text-white font-semibold text-lg transition-colors duration-200"
+            className="bg-red-600 hover:bg-red-700 px-4 py-2 w-full rounded-lg text-white font-semibold text-lg transition-colors duration-200"
             >
             Print Invoice
             </button>

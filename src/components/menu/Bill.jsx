@@ -117,6 +117,10 @@ const Bill = () => {
       enqueueSnackbar("Please enter customer details!", { variant: "warning" });
       return;
     }
+    if (customerData.orderType === 'Dine In' && !customerData.table?.tableId) {
+      enqueueSnackbar("Please select a table for Dine In orders!", { variant: "warning" });
+      return;
+    }
 
     // Place the order
     const orderData = {
@@ -126,6 +130,7 @@ const Bill = () => {
         guests: customerData.guests,
       },
       orderStatus: "In Progress",
+      orderType: customerData.orderType,
       bills: {
         total: total,
         couponCode: appliedCoupon,
@@ -133,7 +138,7 @@ const Bill = () => {
         totalWithDiscount: totalWithDiscount,
       },
       items: cartData,
-      table: customerData.table.tableId,
+      table: customerData.orderType === 'Dine In' ? customerData.table.tableId : null,
       // paymentMethod is not set here, isPaid is false by default
     };
     orderMutation.mutate(orderData);
@@ -206,6 +211,8 @@ const Bill = () => {
           <h1 className="text-gray-800 text-sm lg:text-base font-bold">- ৳{discountAmount.toFixed(2)}</h1>
         </div>
       )}
+
+      
 
       <div className="flex items-center justify-between px-1 lg:px-2 mb-3">
         <p className="text-sm lg:text-base text-gray-800 font-semibold">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MdOutlineReorder, MdAccessTime, MdCheckCircle, MdPending } from "react-icons/md";
+import { MdOutlineReorder, MdAccessTime, MdCheckCircle, MdPending, MdSearch } from "react-icons/md";
 import { IoArrowBackOutline } from "react-icons/io5";
 import BottomNav from "../components/shared/BottomNav";
 import OrdersTable from "../components/orders/OrdersTable";
@@ -11,7 +11,8 @@ import { getOrders, updateOrderStatus } from "../https/index";
 import { enqueueSnackbar } from "notistack";
 import Modal from "../components/shared/Modal";
 import OrderDetailsModal from "../components/orders/OrderDetailsModal";
-import { useNavigate } from "react-router-dom";
+import Invoice from "../components/invoice/Invoice";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addNotification } from "../redux/slices/notificationSlice";
 
@@ -64,13 +65,25 @@ const Orders = () => {
   const [status, setStatus] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
 
   useEffect(() => {
     document.title = "Kacchi Express | Orders";
-  }, []);
+    
+    // Extract search term from URL when component mounts or URL changes
+    const searchParams = new URLSearchParams(location.search);
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchTerm(decodeURIComponent(searchParam));
+    } else if (location.search === '') {
+      // Clear search term when URL has no search parameters
+      setSearchTerm('');
+    }
+  }, [location.search]);
 
   const handleStatusChange = ({ orderId, orderStatus }) => {
     orderStatusUpdateMutation.mutate({ orderId, orderStatus });
@@ -111,23 +124,39 @@ const Orders = () => {
     setSelectedOrder(null);
   };
 
+  const [showInvoice, setShowInvoice] = useState(false);
+  const handlePrintClick = (order) => {
+    setSelectedOrder(order);
+    setShowInvoice(true);
+  };
+
   if (isError) {
     enqueueSnackbar("Something went wrong!", { variant: "error" });
   }
 
   const orders = resData?.data?.data || [];
 
-  // Filter orders based on status
-  const filteredOrders = status === "all"
-    ? orders
-    : orders.filter(order => {
-      switch (status) {
-        case "progress": return order.orderStatus === "In Progress";
-        case "ready": return order.orderStatus === "Ready";
-        case "completed": return order.orderStatus === "Completed";
-        default: return true;
-      }
-    });
+  // Filter orders based on status and search term
+  const filteredOrders = orders.filter(order => {
+    // Status filter
+    const matchesStatus = status === "all" || 
+      (status === "progress" && order.orderStatus === "In Progress") ||
+      (status === "ready" && order.orderStatus === "Ready") ||
+      (status === "completed" && order.orderStatus === "Completed");
+    
+    // Search filter - check customer name, table number, and order ID
+    const matchesSearch = !searchTerm || 
+      (order.customerDetails?.name && order.customerDetails.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (order.table?.tableNo && String(order.table.tableNo).toLowerCase().includes(String(searchTerm).toLowerCase())) ||
+      (order._id && order._id.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    return matchesStatus && matchesSearch;
+  });
+  
+  // For debugging
+  console.log("Search term:", searchTerm);
+  console.log("Filtered orders:", filteredOrders);
+  console.log("All orders:", orders);
 
   // Calculate stats
   const totalOrders = orders.length;
@@ -172,6 +201,29 @@ const Orders = () => {
               <h3 className="text-lg font-semibold text-slate-900 mb-1">Filter Orders</h3>
               <p className="text-sm text-slate-600">View orders by their current status</p>
             </div>
+            
+            {/* Search Box */}
+            <div className="relative w-full sm:w-auto mb-4 sm:mb-0">
+              <div className="relative">
+                <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-lg" />
+                <input
+                  type="text"
+                  placeholder="Search by customer, table..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full sm:w-64 pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+            
             <div className="flex flex-wrap items-center gap-2">
               <FilterButton
                 active={status === "all"}
@@ -216,6 +268,7 @@ const Orders = () => {
             loading={isLoading}
             onViewDetails={handleViewDetails}
             handleStatusChange={handleStatusChange}
+            onPrint={handlePrintClick}
           />
         </div>
 
@@ -251,6 +304,10 @@ const Orders = () => {
         <Modal isOpen={isModalOpen} onClose={closeModal} title={`Order Details`}>
           <OrderDetailsModal orderInfo={selectedOrder} onClose={closeModal} />
         </Modal>
+      )}
+
+      {showInvoice && selectedOrder && (
+        <Invoice orderInfo={selectedOrder} setShowInvoice={setShowInvoice} />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaSearch, FaUserCircle, FaBell } from "react-icons/fa";
 import { MdDashboard } from "react-icons/md";
 import { IoLogOut } from "react-icons/io5";
@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useMutation } from "@tanstack/react-query";
 import { logout } from "../../https";
 import { removeUser } from "../../redux/slices/userSlice";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { markAllAsRead, markAsRead } from "../../redux/slices/notificationSlice";
 import Button from "../ui/Button";
 
@@ -16,8 +16,10 @@ const Header = () => {
   const { notifications, unreadCount } = useSelector((state) => state.notification);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [showNotifications, setShowNotifications] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleBellClick = () => {
     setShowNotifications((prev) => !prev);
@@ -47,6 +49,39 @@ const Header = () => {
     logoutMutation.mutate();
   };
 
+  const handleSearch = () => {
+    // Don't search if the search term is empty or only whitespace
+    if (!searchTerm || !searchTerm.trim()) return;
+    
+    const trimmedSearchTerm = searchTerm.trim();
+    // Determine which page we're on to redirect appropriately
+    const path = location.pathname;
+    
+    if (path.includes('/menu') || path === '/') {
+      // If on menu page or home, search in menu
+      navigate(`/menu?search=${encodeURIComponent(trimmedSearchTerm)}`);
+    } else if (path.includes('/orders')) {
+      // If on orders page, search in orders
+      navigate(`/orders?search=${encodeURIComponent(trimmedSearchTerm)}`);
+    } else {
+      // Default to menu search
+      navigate(`/menu?search=${encodeURIComponent(trimmedSearchTerm)}`);
+    }
+  };
+  
+  // Extract search param from URL when page loads
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const searchParam = searchParams.get('search');
+    
+    if (searchParam) {
+      setSearchTerm(searchParam);
+    } else if (location.search === '') {
+      // Clear search term when URL has no search parameters
+      setSearchTerm('');
+    }
+  }, [location.search]);
+
   return (
     <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
       <div className="flex justify-between items-center py-4 px-6 lg:px-8">
@@ -64,15 +99,35 @@ const Header = () => {
           </div>
         </div>
 
-        {/* SEARCH */}
-        <div className="hidden md:flex items-center gap-3 bg-slate-100 rounded-xl px-4 py-3 w-full max-w-md mx-8 focus-within:bg-white focus-within:ring-2 focus-within:ring-orange-500 focus-within:border-orange-500 transition-all">
-          <FaSearch className="text-slate-400 text-sm" />
-          <input
-            type="text"
-            placeholder="Search orders, tables, menu items..."
-            className="bg-transparent outline-none text-slate-700 placeholder-slate-400 flex-1 text-sm"
-          />
-        </div>
+        {/* SEARCH - Only visible for Admin and Cashier roles */}
+        {userData.role !== "Staff" && (
+          <div className="hidden md:flex items-center gap-3 bg-slate-100 rounded-xl px-4 py-3 w-full max-w-md mx-8 focus-within:bg-white focus-within:ring-2 focus-within:ring-orange-500 focus-within:border-orange-500 transition-all">
+            <FaSearch 
+              className="text-slate-400 text-sm cursor-pointer hover:text-orange-500" 
+              onClick={handleSearch}
+            />
+            <input
+              type="text"
+              placeholder="Search orders, tables, menu items..."
+              className="bg-transparent outline-none text-slate-700 placeholder-slate-400 flex-1 text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        )}
 
         {/* USER ACTIONS */}
         <div className="flex items-center gap-3">

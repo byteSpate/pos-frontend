@@ -1,112 +1,130 @@
-import React from "react";
-import { FaCheckDouble, FaLongArrowAltRight } from "react-icons/fa";
-import { FaCircle } from "react-icons/fa";
-import { formatDateAndTime, getAvatarName } from "../../utils/index";
-import { useMutation, useQueryClient } from "@tanstack/react-query"; // Import useMutation and useQueryClient
-import { deleteOrder } from "../../https/index"; // Import deleteOrder API
-import { enqueueSnackbar } from "notistack"; // Import enqueueSnackbar
+import React from 'react';
+import { MdPayment, MdDelete, MdPrint, MdTableBar } from 'react-icons/md';
+import { FaCheckDouble, FaCircle } from 'react-icons/fa';
+import Tag from '../ui/Tag';
+import Button from '../ui/Button';
+import { formatDateAndTime, getAvatarName } from '../../utils/index';
+import { Select } from 'antd';
 
-const OrderCard = ({ order, onMoreClick }) => {
-  const queryClient = useQueryClient(); // Initialize useQueryClient
-  console.log(order);
+const OrderCard = ({ order, handleStatusChange, onPrint, onViewDetails, onDeleteOrder }) => {
 
-  const deleteOrderMutation = useMutation({
-    mutationFn: deleteOrder,
-    onSuccess: () => {
-      enqueueSnackbar("Order deleted successfully!", { variant: "success" });
-      queryClient.invalidateQueries(["orders"]); // Invalidate orders query to refetch the list
-    },
-    onError: (error) => {
-      console.error("Error deleting order:", error);
-      enqueueSnackbar(error.response?.data?.message || "Failed to delete order!", { variant: "error" });
-    },
-  });
+  const getStatusTag = (status, orderId) => {
+    const statusConfig = {
+      'In Progress': { color: 'warning', icon: <FaCircle className="text-xs" /> },
+      'Ready': { color: 'success', icon: <FaCheckDouble className="text-xs" /> },
+      'Completed': { color: 'success', icon: <FaCheckDouble className="text-xs" /> },
+      'Pending': { color: 'info', icon: <FaCircle className="text-xs" /> },
+    };
 
-  const handleDeleteOrder = () => {
-    if (window.confirm("Are you sure you want to delete this order?")) {
-      deleteOrderMutation.mutate(order._id);
-    }
+    const config = statusConfig[status] || { color: 'default', icon: <FaCircle className="text-xs" /> };
+    
+    return (
+      <Select
+        value={status}
+        onChange={(value) => handleStatusChange({ orderId: orderId, orderStatus: value })}
+        style={{ width: 120, borderColor: '#d9d9d9' }}
+        options={[
+          { value: 'In Progress', label: <span className="text-yellow-600">In Progress</span> },
+          { value: 'Ready', label: <span className="text-green-600">Ready</span> },
+          { value: 'Completed', label: <span className="text-blue-600">Completed</span> },
+        ]}
+      />
+    );
   };
 
   return (
-    <div className="w-[500px]  p-4 rounded-lg mb-4">
-      <div className="flex items-center gap-5">
-        <button className="bg-[#f6b100] p-3 text-xl font-bold rounded-lg">
-          {getAvatarName(order.customerDetails.name)}
-        </button>
-        <div className="flex items-center justify-between w-[100%]">
-          <div className="flex flex-col items-start gap-1">
-            <h1 className="text-[#f5f5f5] text-lg font-semibold tracking-wide">
-              {order.customerDetails.name}
-            </h1>
-            <p className="text-[#ababab] text-sm">#{Math.floor(new Date(order.orderDate).getTime())} / Dine in</p>
-            <p className="text-[#ababab] text-sm">Table <FaLongArrowAltRight className="text-[#ababab] ml-2 inline" /> {order.table.tableNo}</p>
+    <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+            {getAvatarName(order.customerDetails.name)}
           </div>
-          <div className="flex flex-col items-end gap-2">
-            {order.orderStatus === "Ready" ? (
+          <div>
+            <div className="font-medium text-slate-900">{order.customerDetails.name}</div>
+            <div className="text-xs text-slate-500">
+              #{Math.floor(new Date(order.orderDate).getTime())}
+            </div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="font-bold text-slate-900">৳{order.bills.totalWithDiscount?.toFixed(2)}</div>
+          {order.bills.couponCode && (
+            <div className="text-xs text-green-600">
+              -{order.bills.couponCode}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+        <div>
+          <p className="text-slate-500">Order Type</p>
+          <Tag color={order.orderType === 'Dine In' ? 'blue' : 'green'}>{order.orderType}</Tag>
+        </div>
+        <div>
+          <p className="text-slate-500">Table</p>
+          <div className="flex items-center gap-1 text-slate-700">
+            {order.table ? (
               <>
-                <p className="text-green-600 bg-[#2e4a40] px-2 py-1 rounded-lg">
-                  <FaCheckDouble className="inline mr-2" /> {order.orderStatus}
-                </p>
-                <p className="text-[#ababab] text-sm">
-                  <FaCircle className="inline mr-2 text-green-600" /> Ready to
-                  serve
-                </p>
+                <MdTableBar className="text-slate-400" />
+                <span className="font-medium">{order.table.tableNo}</span>
               </>
             ) : (
-              <>
-                <p className="text-yellow-600 bg-[#4a452e] px-2 py-1 rounded-lg">
-                  <FaCircle className="inline mr-2" /> {order.orderStatus}
-                </p>
-                <p className="text-[#ababab] text-sm">
-                  <FaCircle className="inline mr-2 text-yellow-600" /> Preparing your order
-                </p>
-              </>
+              <span className="font-medium text-slate-500">Take Away</span>
             )}
           </div>
         </div>
-      </div>
-      <div className="flex justify-between items-center mt-4 text-[#ababab]">
-        <p>{formatDateAndTime(order.orderDate)}</p>
-        <p>{order.items.length} Items</p>
-      </div>
-      <hr className="w-full mt-4 border-t-1 border-gray-500" />
-      <div className="flex items-center justify-between mt-4">
-        <h1 className="text-[#f5f5f5] text-lg font-semibold">Subtotal</h1>
-        <p className="text-[#f5f5f5] text-lg font-semibold">৳{order.bills.total?.toFixed(2)}</p>
-      </div>
-      {order.bills.couponCode && (
-        <div className="flex items-center justify-between mt-2">
-          <h1 className="text-[#f5f5f5] text-lg font-semibold">Discount ({order.bills.couponCode})</h1>
-          <p className="text-[#f5f5f5] text-lg font-semibold">- ৳{order.bills.discountAmount?.toFixed(2)}</p>
+        <div>
+          <p className="text-slate-500">Items</p>
+          <span className="font-medium text-slate-700">{order.items.length}</span>
         </div>
-      )}
-      <div className="flex items-center justify-between mt-2">
-        <h1 className="text-[#f5f5f5] text-xl font-bold">Total</h1>
-        <p className="text-[#f5f5f5] text-xl font-bold">৳{order.bills.totalWithDiscount?.toFixed(2)}</p>
+        <div>
+          <p className="text-slate-500">Order Date</p>
+          <div className="text-slate-700">
+            <div className="font-medium">{formatDateAndTime(order.orderDate).split(' ')[0]}</div>
+            <div className="text-xs text-slate-500">{formatDateAndTime(order.orderDate).split(' ')[1]}</div>
+          </div>
+        </div>
       </div>
 
-      {order.orderStatus === "In Progress" && (
-        <div className="mt-4">
-          <button
-            onClick={handleDeleteOrder}
-            className="bg-red-600 px-4 py-2 w-full rounded-lg text-[#f5f5f5] font-semibold"
-          >
-            Delete Order
-          </button>
-        </div>
-      )}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-slate-500">Status</p>
+        {getStatusTag(order.orderStatus, order._id)}
+      </div>
 
-      {order.orderStatus === "Completed" && (
-        <div className="mt-4">
-          <button
-            onClick={() => onMoreClick(order)}
-            className="bg-[#025cca] px-4 py-2 w-full rounded-lg text-[#f5f5f5] font-semibold"
+      <div className="flex items-center justify-end gap-2">
+        {order.orderStatus === 'Completed' && !order.isPaid && (
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => onViewDetails(order)}
+            icon={<MdPayment />}
           >
             Payment
-          </button>
-        </div>
-      )}
+          </Button>
+        )}
+        
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onPrint(order)}
+          icon={<MdPrint />}
+          className="text-slate-500 hover:text-blue-600"
+        >
+          Print
+        </Button>
+
+        {order.orderStatus === 'In Progress' && (
+          <Button
+            size="sm"
+            variant="danger"
+            onClick={() => onDeleteOrder(order._id)}
+            icon={<MdDelete />}
+          >
+            Delete
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

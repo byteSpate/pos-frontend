@@ -164,29 +164,41 @@ const ReportActions = ({
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>Financial Report</title>
+                    <title>Financial ${periodText}</title>
                     <style>
                         @media print {
-                            body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+                            @page {
+                                size: 80mm auto; /* Adjust width as needed */
+                                margin: 0;
+                            }
+                            body {
+                                margin: 0;
+                                padding: 10px;
+                                font-family: 'Courier New', Courier, monospace;
+                                font-size: 10px;
+                            }
                             .no-print { display: none !important; }
                         }
-                        body { font-family: Arial, sans-serif; padding: 20px; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-                        .subtitle { color: #666; margin-bottom: 5px; }
-                        .section { margin-bottom: 30px; }
-                        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #4285F4; padding-bottom: 5px; }
-                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                        th { background-color: #4285F4; color: white; font-weight: bold; }
+                        body { font-family: 'Courier New', Courier, monospace; padding: 10px; font-size:10px; }
+                        .header { text-align: center; margin-bottom: 20px; }
+                        .logo { max-width: 100px; margin-bottom: 10px; }
+                        .title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+                        .subtitle { color: #666; margin-bottom: 5px; font-size:10px; }
+                        .section { margin-bottom: 20px; }
+                        .section-title { font-size: 12px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #4285F4; padding-bottom: 5px; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+                        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+                        th { background-color: #f2f2f2; font-weight: bold; }
                         tr:nth-child(even) { background-color: #f9f9f9; }
                         .amount { text-align: right; font-weight: bold; }
                         .positive { color: #10B981; }
                         .negative { color: #EF4444; }
+                        .footer { text-align: center; margin-top: 20px; font-size: 10px; }
                     </style>
                 </head>
                 <body>
                     <div class="header">
+                        <img src="/src/assets/images/logo.jpg" alt="Logo" class="logo" />
                         <div class="title">Financial Report</div>
                         <div class="subtitle">${periodText}</div>
                         <div class="subtitle">Generated on: ${new Date().toLocaleDateString()}</div>
@@ -212,7 +224,7 @@ const ReportActions = ({
                                 </tr>
                                 <tr>
                                     <td>Net Revenue</td>
-                                    <td class="amount ${(overview.netRevenue || 0) >= 0 ? 'positive' : 'negative'}">${formatCurrency(overview.netRevenue || 0)}</td>
+                                    <td class="amount ${((overview.netRevenue || 0) >= 0) ? 'positive' : 'negative'}">${formatCurrency(overview.netRevenue || 0)}</td>
                                 </tr>
                                 <tr>
                                     <td>Total Orders</td>
@@ -251,6 +263,9 @@ const ReportActions = ({
                         </table>
                     </div>
                     ` : ''}
+                    <div class="footer">
+                        <p>Powered by : Bytespate Limited</p>
+                    </div>
                 </body>
                 </html>
             `;

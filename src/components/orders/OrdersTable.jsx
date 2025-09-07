@@ -9,8 +9,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteOrder } from '../../https/index';
 import { enqueueSnackbar } from 'notistack';
 import { Select } from 'antd';
+import useMediaQuery from '../../hooks/useMediaQuery';
+import OrderCard from './OrderCard';
 
-const OrdersTable = ({ orders = [], loading = false, onViewDetails, handleStatusChange }) => {
+const OrdersTable = ({ orders = [], loading = false, onViewDetails, handleStatusChange, onPrint }) => {
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [ordersPerPage] = useState(10);
@@ -92,13 +94,28 @@ const OrdersTable = ({ orders = [], loading = false, onViewDetails, handleStatus
       sorter: true,
     },
     {
+      title: 'Order Type',
+      key: 'orderType',
+      width: '120px',
+      render: (orderType) => (
+        <Tag color={orderType === 'Dine In' ? 'blue' : 'green'}>{orderType}</Tag>
+      ),
+      sorter: true,
+    },
+    {
       title: 'Table',
       key: 'table',
       width: '100px',
       render: (_, record) => (
         <div className="flex items-center gap-1 text-slate-700">
-          <MdTableBar className="text-slate-400" />
-          <span className="font-medium">{record.table.tableNo}</span>
+          {record.table ? (
+            <>
+              <MdTableBar className="text-slate-400" />
+              <span className="font-medium">{record.table.tableNo}</span>
+            </>
+          ) : (
+            <span className="font-medium text-slate-500">Take Away</span>
+          )}
         </div>
       ),
       sorter: true,
@@ -135,6 +152,7 @@ const OrdersTable = ({ orders = [], loading = false, onViewDetails, handleStatus
       title: 'Total Amount',
       key: 'total',
       width: '120px',
+      align: 'right',
       render: (_, record) => (
         <div className="text-right">
           <div className="font-bold text-slate-900">৳{record.bills.totalWithDiscount?.toFixed(2)}</div>
@@ -151,9 +169,10 @@ const OrdersTable = ({ orders = [], loading = false, onViewDetails, handleStatus
       title: 'Actions',
       key: 'actions',
       width: '100px',
+      className: 'sticky right-0 bg-white',
       render: (_, record) => (
         <div className="flex items-center gap-2">
-          {record.orderStatus === 'Completed' && (
+          {record.orderStatus === 'Completed' && !record.isPaid && (
             <Button
               size="sm"
               variant="primary"
@@ -166,8 +185,8 @@ const OrdersTable = ({ orders = [], loading = false, onViewDetails, handleStatus
           
           <Button
             size="sm"
-            variant="ghost"
-            onClick={() => onViewDetails(record)}
+            variant="outline"
+            onClick={() => onPrint(record)}
             icon={<MdPrint />}
             className="text-slate-500 hover:text-blue-600"
           >
@@ -189,15 +208,34 @@ const OrdersTable = ({ orders = [], loading = false, onViewDetails, handleStatus
     },
   ];
 
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
   // Transform data for table
   const tableData = orders.map(order => ({
     key: order._id,
     ...order,
   }));
 
+  if (isMobile) {
+    return (
+      <div className="bg-white rounded-lg p-4 shadow-sm">
+        {currentOrders.map(order => (
+          <OrderCard
+            key={order._id}
+            order={order}
+            handleStatusChange={handleStatusChange}
+            onPrint={onPrint}
+            onViewDetails={onViewDetails}
+            onDeleteOrder={handleDeleteOrder}
+          />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-lg p-4 shadow-sm">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto relative">
         <Table
           columns={columns}
           data={currentOrders}
